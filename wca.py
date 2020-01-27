@@ -153,12 +153,16 @@ class Search:
     def __init__(self, query):
         self.query = query
         self.url = f"https://www.worldcubeassociation.org/search?q={urllib.parse.quote(query)}"
-        self.page = BeautifulSoup(requests.get(self.url, headers={"User-Agent": "WCA Discord Bot"}).content, "html.parser")
-
+        self.request = requests.get(self.url, headers={"User-Agent": "WCA Discord Bot"})
+        self.page = BeautifulSoup(self.request.content, "html.parser")
+        
         # Get person results
         self.user_result = []
         for i in self.page.findAll("tbody")[0].findAll("tr"):
-            avatar = i.findAll("div")[0]['data-content'].replace('<img src=\'', '').replace('\'></img>', '')
+            try:
+                avatar = i.findAll("div")[0]['data-content'].replace('<img src=\'', '').replace('\'></img>', '')
+            except KeyError:
+                avatar = "https://www.worldcubeassociation.org/assets/missing_avatar_thumb-f0ea801c804765a22892b57636af829edbef25260a65d90aaffbd7873bde74fc.png"
             wca_id = i.findAll("td")[1].text.strip()
             name = i.findAll("td")[2].text.strip()
             country = i.findAll("td")[3].text.strip()
@@ -204,6 +208,35 @@ class User:
             self.wr = wr
             self.cr = cr
             self.nr = nr
+    
+    @staticmethod
+    def best_event(event_pb, ranking):
+        low_i = 999999999999999999
+        low_e = None
+
+        for i in event_pb:
+            try:
+                if int(getattr(i, ranking)) < low_i:
+                    low_i = int(getattr(i, ranking))
+                    low_e = i
+            except ValueError:
+                pass
+        return low_e
+
+    @staticmethod
+    def worst_event(event_pb, ranking):
+        low_i = 0
+        low_e = None
+
+        for i in event_pb:
+            try:
+                if getattr(i, ranking) < low_i:
+                    low_i = getattr(i, ranking)
+                    low_e = i
+            except:
+                pass
+        return low_e
+
 
     @staticmethod
     def from_page(url):
