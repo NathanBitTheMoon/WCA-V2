@@ -1,5 +1,5 @@
 from bs4 import BeautifulSoup
-import requests, string
+import requests, string, urllib
 
 class Event:
     def __init__(self, name, id_name, query):
@@ -149,6 +149,29 @@ class Utils:
                     return False
         return True
 
+class Search:
+    def __init__(self, query):
+        self.query = query
+        self.url = f"https://www.worldcubeassociation.org/search?q={urllib.parse.quote(query)}"
+        self.page = BeautifulSoup(requests.get(self.url, headers={"User-Agent": "WCA Discord Bot"}).content, "html.parser")
+
+        # Get person results
+        self.user_result = []
+        for i in self.page.findAll("tbody")[0].findAll("tr"):
+            avatar = i.findAll("div")[0]['data-content'].replace('<img src=\'', '').replace('\'></img>', '')
+            wca_id = i.findAll("td")[1].text.strip()
+            name = i.findAll("td")[2].text.strip()
+            country = i.findAll("td")[3].text.strip()
+
+            self.user_result.append(Search.User(wca_id, name, country, avatar))
+    
+    class User:
+        def __init__(self, wca_id, name, country, avatar):
+            self.wca_id = wca_id
+            self.name = name
+            self.country = country
+            self.avatar = avatar
+            
 class User:
     def __init__(self, wca_id, name, country, gender, comp_count, completed_solves, avatar, personal_records, medal_collection):
         self.wca_id = wca_id
