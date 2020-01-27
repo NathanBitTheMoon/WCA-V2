@@ -130,6 +130,35 @@ class Event:
         
         raise Event.EventNotFoundException(f"Could not locate the object for '{event_id}'")
 
+class Ranking:
+    def __init__(self, event, area = "world", ranking_type = "single"):
+        self.event = event()
+        self.area = area
+        self.ranking_type = ranking_type
+
+        self.url = f"https://www.worldcubeassociation.org/results/rankings/{self.event.id_name}/{self.ranking_type}?region={self.area}"
+        self.request = requests.get(self.url, headers = {"User-Agent": "WCA Discord Bot"})
+        self.page = BeautifulSoup(self.request.content, "html.parser")
+
+        table = self.page.findAll("tbody")[0].findAll("tr")
+        self.results = []
+        for i in table:
+            pos = i.findAll("td", {"class": "pos"})[0].text.strip()
+            name = i.findAll("td", {"class": "name"})[0].text.strip()
+            result = i.findAll("td", {"class": "result"})[0].text.strip()
+            country = [i.findAll("td", {"class": "country"})[0].findAll("span")[0]['class'][1].replace('flag-icon-', ''), i.findAll("td", {"class": "country"})[0].text.strip()]
+            competition = i.findAll("td", {"class": "competition"})[0].findAll("a")[0]['href'].replace('/competitions/', '')
+
+            self.results.append(Ranking.Result(pos, name, result, country, competition))
+    
+    class Result:
+        def __init__(self, pos, name, result, country, competiton):
+            self.position = pos
+            self.name = name
+            self.result = result
+            self.country = country
+            self.competiton = competiton
+
 class Utils:
     @staticmethod
     def is_wca_id(s : str):
