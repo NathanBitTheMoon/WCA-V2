@@ -130,6 +130,23 @@ class Event:
         
         raise Event.EventNotFoundException(f"Could not locate the object for '{event_id}'")
 
+
+class RankingHook:
+    def __init__(self, hook_object, track):
+        self.hook_object = hook_object
+        self.track = track # This will later be used for tracking particular elements, rather than only tracking the name and result of the first place of the hook_object.
+
+        self.current_result_schema = self.hook_object.results
+    
+    def get_changes(self):
+        new_results = self.hook_object.update()
+
+        if self.current_result_schema[0].name != new_results[0].name or self.current_result_schema[0].result != new_results[0].result:
+            return new_results[0]
+        
+        return False
+        
+
 class Ranking:
     def __init__(self, event, area = "world", ranking_type = "single"):
         self.event = event()
@@ -150,6 +167,23 @@ class Ranking:
             competition = i.findAll("td", {"class": "competition"})[0].findAll("a")[0]['href'].replace('/competitions/', '')
 
             self.results.append(Ranking.Result(pos, name, result, country, competition))
+        
+    def update(self):
+        self.request = requests.get(self.url, headers = {"User-Agent": "WCA Discord Bot"})
+        self.page = BeautifulSoup(self.request.content, "html.parser")
+
+        table = self.page.findAll("tbody")[0].findAll("tr")
+        self.results = []
+        for i in table:
+            pos = i.findAll("td", {"class": "pos"})[0].text.strip()
+            name = i.findAll("td", {"class": "name"})[0].text.strip()
+            result = i.findAll("td", {"class": "result"})[0].text.strip()
+            country = [i.findAll("td", {"class": "country"})[0].findAll("span")[0]['class'][1].replace('flag-icon-', ''), i.findAll("td", {"class": "country"})[0].text.strip()]
+            competition = i.findAll("td", {"class": "competition"})[0].findAll("a")[0]['href'].replace('/competitions/', '')
+
+            self.results.append(Ranking.Result(pos, name, result, country, competition))
+        
+        return self.results
     
     class Result:
         def __init__(self, pos, name, result, country, competiton):
