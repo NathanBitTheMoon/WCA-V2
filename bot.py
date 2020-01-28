@@ -3,16 +3,28 @@ token = ''
 import discord
 from discord.ext.commands import Bot
 import wca, urllib
+import datetime, time
 
 client = Bot(command_prefix = '?')
+
+def log_usage(command, arg):
+    f = open('use.log', 'a')
+    f.write("\n" + str(int(time.time())) + ":" + command + f"({arg})")
+    f.close()
+
+def log_action(action):
+    f = open('use.log', 'a')
+    f.write(";" + action)
+    f.close()
 
 @client.event
 async def on_ready():
     print(f"{client.user.name} is now online")
 
 
-@client.command(name = "person", pass_context = True, help = "Get basic information about someone. Usage: ?person <name/wca ID>")
+@client.command(name = "person", pass_context = True, help = "Get basic information about someone. Usage: ?person <name / WCA ID>")
 async def person(ctx, *args):
+    log_usage("person", ' '.join(args))
     query_string = ' '.join(args)
 
     embed_loading = discord.Embed(description = "Loading...")
@@ -24,16 +36,20 @@ async def person(ctx, *args):
     if wca.Utils.is_wca_id(query_string):
         try:
             user_data = wca.User.from_page(f"https://www.worldcubeassociation.org/persons/{query_string.upper()}")
+            log_action("wcaid-success")
         except IndexError:
             user_query_success = False
+            log_action("wcaid-fail")
     
     if not wca.Utils.is_wca_id(query_string) or not user_query_success:
         try:
             search = wca.Search(query_string)
             user_data = wca.User.from_page(f"https://www.worldcubeassociation.org/persons/{search.user_result[0].wca_id}")
             user_query_success = True
+            log_action("name-success")
         except:
             user_query_success = False
+            log_action("name-fail")
 
     if user_query_success:
         embed_content = discord.Embed(title = f"WCA info for {user_data.name}")
@@ -74,5 +90,60 @@ async def person(ctx, *args):
     else:
         embed_content = discord.Embed(title = f"No results for \"{query_string}\"", description = ":warning: No results for your search. Check the spelling.")
         await message.edit(embed = embed_content)
+
+
+@client.command(name = "pr", pass_context = True, help = "Get the personal records for a given person. Usage: ?pr <name / WCA ID>")
+async def pr(ctx, *args):
+    log_usage("pr", ' '.join(args))
+    query_string = ' '.join(args)
+
+    embed_loading = discord.Embed(description = "Loading...")
+    message = await ctx.channel.send(embed = embed_loading)
+
+    user_data = None
+    user_query_success = True
+
+    if wca.Utils.is_wca_id(query_string):
+        try:
+            user_data = wca.User.from_page(f"https://www.worldcubeassociation.org/persons/{query_string.upper()}")
+            log_action("wcaid-success")
+        except IndexError:
+            user_query_success = False
+            log_action("wcaid-fail")
+    
+    if not wca.Utils.is_wca_id(query_string) or not user_query_success:
+        try:
+            search = wca.Search(query_string)
+            user_data = wca.User.from_page(f"https://www.worldcubeassociation.org/persons/{search.user_result[0].wca_id}")
+            user_query_success = True
+            log_action("name-success")
+        except:
+            user_query_success = False
+            log_action("name-fail")
+    
+    if user_query_success:
+        embed_content = discord.Embed(title = f"Personal records for {user_data.name}")
+        event = []
+        single = []
+        average = []
+
+        for i in user_data.personal_records:
+            event.append(i.event().name)
+            single.append(i.single)
+            average.append(i.average)
+        
+        embed_content.add_field(name = "Event", value = '\n'.join(event))
+        embed_content.add_field(name = "Single", value = '\n'.join(single))
+        embed_content.add_field(name = "Average", value = '\n'.join(average))
+    
+        await message.edit(embed = embed_content)
+
+@client.command(name = 'info', pass_context = True)
+async def info(ctx):
+    embed_content = discord.Embed(title = "About this bot", description = "This bot was devoleped by AutoPlay5. The code for the API and Discord bot is open source and free for anyone to use and audit. The bot only gathers usage information such as a list of server name or the use of a particular command. This data is completly anonymous. It was written in Python 3.7.")
+    embed_content.add_field(name = "GitHub (Source Code)", value = "https://github.com/NathanBitTheMoon/WCA-V2")
+    embed_content.add_field(name = "Latency", value = str(round(client.latency * 1000, 0)) + "ms")
+
+    await ctx.channel.send(embed = embed_content)
 
 client.run(open('.env', 'r').read())
