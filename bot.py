@@ -3,7 +3,7 @@ token = ''
 import discord
 from discord.ext.commands import Bot
 import wca, urllib
-import datetime, time
+import datetime, time, json
 
 client = Bot(command_prefix = '?')
 
@@ -91,6 +91,69 @@ async def person(ctx, *args):
         embed_content = discord.Embed(title = f"No results for \"{query_string}\"", description = ":warning: No results for your search. Check the spelling.")
         await message.edit(embed = embed_content)
 
+@client.command(name = "ranking", pass_context = True, help = "Get a list of the top 5 people for an event. Usage: ?ranking country, event (country can be blank)")
+async def ranking(ctx, *args):
+    log_usage("ranking", ' '.join(args))
+    query_string = ' '.join(args)
+
+    embed_loading = discord.Embed(description = "Loading...")
+    message = await ctx.channel.send(embed = embed_loading)
+
+    countries = json.load(open('countries.json', 'r'))
+    continents = json.load(open('continents.json', 'r'))
+    country = "world"
+    event = None
+    found = ""
+
+    # Get country
+    for c in continents:
+        if c['name'].lower() in query_string.lower():
+            country = c['id']
+            found = c['name']
+            log_action("cid")
+    for i in countries:
+        if i['name'].lower() in query_string.lower() or query_string.lower() in i['name'].lower():
+            country = i['id']
+            found = i['name']
+            log_action("name")
+        elif i['id'].lower() in query_string.lower() or query_string.lower() in i['id'].lower():
+            country = i['id']
+            found = i['id']
+            log_action("id")
+    
+    average = ['average', 'avg']
+    single = ['single']
+    ranking_type = "single"
+
+    for i in average:
+        if i in query_string:
+            ranking_type = "average"
+    
+    for i in single:
+        if i in query_string:
+            ranking_type = "single"
+    
+    query_string = query_string.replace(found, "").strip()
+    event = wca.Event.query_event(query_string)
+
+    rankings = wca.Ranking(event, area = country, ranking_type = ranking_type)
+
+    names = []
+    wca_id = []
+    value = []
+    
+    for i in rankings.results[:5]:
+        names.append(i.name)
+        wca_id.append(i.wca_id)
+        value.append(i.result)
+    
+    embed_content = discord.Embed(title = f"{ranking_type[0].upper()}{ranking_type[1:]} {event().name} rankings for {country.replace('_', '')}")
+
+    embed_content.add_field(name = "Name", value = '\n'.join(names))
+    embed_content.add_field(name = "WCA ID", value = '\n'.join(wca_id))
+    embed_content.add_field(name = "Result", value = '\n'. join(value))
+
+    await message.edit(embed = embed_content)
 
 @client.command(name = "pr", pass_context = True, help = "Get the personal records for a given person. Usage: ?pr <name / WCA ID>")
 async def pr(ctx, *args):
@@ -143,6 +206,7 @@ async def info(ctx):
     embed_content = discord.Embed(title = "About this bot", description = "This bot was devoleped by AutoPlay5. The code for the API and Discord bot is open source and free for anyone to use and audit. The bot only gathers usage information such as a list of server name or the use of a particular command. This data is completly anonymous. It was written in Python 3.7.")
     embed_content.add_field(name = "GitHub (Source Code)", value = "https://github.com/NathanBitTheMoon/WCA-V2")
     embed_content.add_field(name = "Latency", value = str(round(client.latency * 1000, 0)) + "ms")
+    embed_content.add_field(name = "ISO 3166 credits", value = "https://github.com/lukes/ISO-3166-Countries-with-Regional-Codes/blob/master/all/all.json")
 
     await ctx.channel.send(embed = embed_content)
 
