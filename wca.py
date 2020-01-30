@@ -188,7 +188,7 @@ class RankingHook:
         return {
             'event': self.hook_object.event.id_name,
             'area': self.hook_object.area,
-            'ranking_type' = self.hook_object.ranking_type
+            'ranking_type': self.hook_object.ranking_type
         }
         
 
