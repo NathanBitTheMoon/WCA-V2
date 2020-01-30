@@ -200,11 +200,12 @@ class Ranking:
         for i in table:
             pos = i.findAll("td", {"class": "pos"})[0].text.strip()
             name = i.findAll("td", {"class": "name"})[0].text.strip()
+            wca_id = i.findAll("td", {"class": "name"})[0].findAll("a")[0]['href'].replace("/persons/", "").strip()
             result = i.findAll("td", {"class": "result"})[0].text.strip()
             country = [i.findAll("td", {"class": "country"})[0].findAll("span")[0]['class'][1].replace('flag-icon-', ''), i.findAll("td", {"class": "country"})[0].text.strip()]
             competition = i.findAll("td", {"class": "competition"})[0].findAll("a")[0]['href'].replace('/competitions/', '')
 
-            self.results.append(Ranking.Result(pos, name, result, country, competition))
+            self.results.append(Ranking.Result(pos, name, result, country, competition, wca_id))
         
     def update(self):
         self.request = requests.get(self.url, headers = {"User-Agent": "WCA Discord Bot"})
@@ -215,21 +216,23 @@ class Ranking:
         for i in table:
             pos = i.findAll("td", {"class": "pos"})[0].text.strip()
             name = i.findAll("td", {"class": "name"})[0].text.strip()
+            wca_id = i.findAll("td", {"class": "name"})[0].findAll("a")[0]['href'].replace("/persons/", "").strip()
             result = i.findAll("td", {"class": "result"})[0].text.strip()
             country = [i.findAll("td", {"class": "country"})[0].findAll("span")[0]['class'][1].replace('flag-icon-', ''), i.findAll("td", {"class": "country"})[0].text.strip()]
             competition = i.findAll("td", {"class": "competition"})[0].findAll("a")[0]['href'].replace('/competitions/', '')
 
-            self.results.append(Ranking.Result(pos, name, result, country, competition))
+            self.results.append(Ranking.Result(pos, name, result, country, competition, wca_id))
         
         return self.results
     
     class Result:
-        def __init__(self, pos, name, result, country, competiton):
+        def __init__(self, pos, name, result, country, competiton, wca_id):
             self.position = pos
             self.name = name
             self.result = result
             self.country = country
             self.competiton = competiton
+            self.wca_id = wca_id
 
 class Utils:
     @staticmethod
