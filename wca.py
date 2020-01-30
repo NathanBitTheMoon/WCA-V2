@@ -12,108 +12,126 @@ class Event:
             self.name = "3x3x3 Cube"
             self.id_name = "333"
             self.query = ["3x3", "cube", "square", "3x3x3"]
+            self.priority = True
     
     class _2x2x2:
         def __init__(self):
             self.name = "2x2x2 Cube"
             self.id_name = "222"
             self.query = ["2x2", "cube", "square", "2x2x2"]
+            self.priority = False
     
     class _4x4x4:
         def __init__(self):
             self.name = "4x4x4 Cube"
             self.id_name = "444"
             self.query = ["4x4", "cube", "square", "4x4x4"]
+            self.priority = False
     
     class _5x5x5:
         def __init__(self):
             self.name = "5x5x5 Cube"
             self.id_name = "555"
             self.query = ["5x5", "cube", "square", "5x5x5"]
+            self.priority = False
     
     class _6x6x6:
         def __init__(self):
             self.name = "6x6x6 Cube"
             self.id_name = "666"
             self.query = ["6x6", "cube", "square", "6x6x6"]
+            self.priority = False
     
     class _7x7x7:
         def __init__(self):
             self.name = "7x7x7 Cube"
             self.id_name = "777"
             self.query = ["7x7", "cube", "square", "7x7x7"]
+            self.priority = False
     
     class _3x3x3bld:
         def __init__(self):
             self.name = "3x3x3 Blindfolded"
             self.id_name = "333bf"
             self.query = ["3x3", "cube", "square", "3x3x3", "blind", "bld"]
+            self.priority = False
     
     class _3x3x3fmc:
         def __init__(self):
             self.name = "3x3x3 Fewest Moves"
             self.id_name = "333fm"
             self.query = ["3x3", "cube", "square", "3x3x3", "fmc", "fewest", "moves"]
+            self.priority = False
     
     class _3x3x3oh:
         def __init__(self):
             self.name = "3x3x3 One-Handed"
             self.id_name = "333oh"
             self.query = ["3x3", "cube", "square", "3x3x3", "oh", "one", "handed"]
+            self.priority = False
     
     class _3x3x3ft: # Rip feet lol
         def __init__(self):
             self.name = "3x3x3 With Feet"
             self.id_name = "333ft"
-            self.query = ["3x3", "cube", "square", "3x3x3", "feet", "rip", "toe", "fetish"]
+            self.query = ["3x3", "cube", "square", "3x3x3", "feet"]
+            self.priority = False
     
     class clock:
         def __init__(self):
             self.name = "Clock"
             self.id_name = "clock"
             self.query = ["clock", "clk", "cloncc"]
+            self.priority = False
     
     class megaminx:
         def __init__(self):
             self.name = "Megaminx"
             self.id_name = "minx"
             self.query = ["mega", "minx", "hexagon"]
+            self.priority = False
     
     class square1:
         def __init__(self):
             self.name = "Square-1"
             self.id_name = "sq1"
             self.query = ["sq", "square", "squan", "1"]
+            self.priority = False
     
     class _4x4x4bld:
         def __init__(self):
             self.name = "4x4x4 Blindfolded"
             self.id_name = "444bf"
             self.query = ["4x4", "cube", "square", "4x4x4", "blind", "bld"]
+            self.priority = False
     
     class _5x5x5bld:
         def __init__(self):
             self.name = "5x5x5 Blindfolded"
             self.id_name = "555bf"
             self.query = ["5x5", "cube", "square", "5x5x5", "blind", "bld"]
+            self.priority = False
     
     class _3x3x3mbld:
         def __init__(self):
             self.name = "3x3x3 Multi-Blind"
             self.id_name = "333mbf"
             self.query = ["3x3", "cube", "square", "3x3x3", "multi", "mbld", "bld", "blind"]
+            self.priority = False
     
     class pyraminx:
         def __init__(self):
             self.name = "Pyraminx"
             self.id_name = "pyram"
             self.query = ["pyra", "minx", "triangle"]
+            self.priority = False
     
     class skewb:
         def __init__(self):
             self.name = "Skewb"
             self.id_name = "skewb"
             self.query = ["skewb"]
+            self.priority = False
     
     class EventNotFoundException(Exception):
         pass
@@ -122,7 +140,7 @@ class Event:
     def get_event(event_id):
         """ Return the object for the event_id """
 
-        event_classes = [getattr(Event, e) for e in dir(Event) if not e.startswith("__") and e != "get_event" and e != "EventNotFoundException"]
+        event_classes = [getattr(Event, e) for e in dir(Event) if not e.startswith("__") and e not in ["get_event", "EventNotFoundException", "query_event"]]
 
         for i in event_classes:
             if i().id_name == event_id.lower():
@@ -130,6 +148,26 @@ class Event:
         
         raise Event.EventNotFoundException(f"Could not locate the object for '{event_id}'")
 
+    @staticmethod
+    def query_event(query_string):
+        """ Using the query strings of the objects to find an object """
+
+        event_classes = [getattr(Event, e) for e in dir(Event) if not e.startswith("__") and e not in ["get_event", "EventNotFoundException", "query_event"]]
+        event_rank = []
+
+        for i in event_classes:
+            ranking = 0
+
+            for search_key in i().query:
+                if search_key in query_string:
+                    ranking += 1
+            
+            event_rank.append([(ranking / len(i().query)), i])
+        
+        find_first_item = lambda x: x[0]
+        event_rank.sort(key = find_first_item, reverse = True)
+
+        return event_rank[0][1]
 
 class RankingHook:
     def __init__(self, hook_object, track):
