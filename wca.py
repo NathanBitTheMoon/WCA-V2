@@ -183,6 +183,13 @@ class RankingHook:
             return new_results[0]
         
         return False
+    
+    def dump_dict(self):
+        return {
+            'event': self.hook_object.event.id_name,
+            'area': self.hook_object.area,
+            'ranking_type' = self.hook_object.ranking_type
+        }
         
 
 class Ranking:
