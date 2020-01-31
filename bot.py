@@ -23,6 +23,9 @@ def log_action(action):
 async def on_ready():
     print(f"{client.user.name} is now online")
 
+    activity = discord.Game(name = "with squares. Type ?help, I'm back")
+    await client.change_presence(status = discord.Status.online, activity = activity)
+
 @client.command(name = "person", pass_context = True, help = "Get basic information about someone. Usage: ?person <name / WCA ID>")
 async def person(ctx, *args):
     log_usage("person", ' '.join(args))
