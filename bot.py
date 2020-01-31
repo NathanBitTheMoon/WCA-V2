@@ -3,9 +3,11 @@ token = ''
 import discord
 from discord.ext.commands import Bot
 import wca, urllib
-import datetime, time, json
+import datetime, time, json, announcement
 
 client = Bot(command_prefix = '?')
+
+announcement_client = announcement.Announcement(None)
 
 def log_usage(command, arg):
     f = open('use.log', 'a')
@@ -20,7 +22,6 @@ def log_action(action):
 @client.event
 async def on_ready():
     print(f"{client.user.name} is now online")
-
 
 @client.command(name = "person", pass_context = True, help = "Get basic information about someone. Usage: ?person <name / WCA ID>")
 async def person(ctx, *args):
@@ -209,5 +210,41 @@ async def info(ctx):
     embed_content.add_field(name = "ISO 3166 credits", value = "https://github.com/lukes/ISO-3166-Countries-with-Regional-Codes/blob/master/all/all.json")
 
     await ctx.channel.send(embed = embed_content)
+
+@client.command(name = "subscribe", pass_context = True, help = "Subscribes a channel to record announcements about a particular event in a particular area. This action must be performed by an admin. If the event or country is two words or longer, it must be surrounded by double quotes. Usage: ?subscribe <channel> <event> <area> <single/average>\nEG. ?subscribe #wca-notify \"3x3 Multi Blind\" world single")
+async def subscribe(ctx, channel : discord.TextChannel, event, area, s_a):
+    # Check if author is admin or owner
+    if ctx.author.id == ctx.guild.owner.id or ctx.author.top_role.permissions.administrator:
+        # User is authorised
+        event = wca.Event.query_event(event)
+
+        countries = json.load(open('countries.json', 'r'))
+        continents = json.load(open('continents.json', 'r'))
+        country = "world"
+
+        # Get country
+        for c in continents: # Duplicate code!!! Clean later
+            if c['name'].lower() in area.lower():
+                country = c['id']
+                log_action("cid")
+        for i in countries:
+            if i['name'].lower() in area.lower() or area.lower() in i['name'].lower():
+                country = i['id']
+                log_action("name")
+            elif i['id'].lower() in area.lower() or area.lower() in i['id'].lower():
+                country = i['id']
+                log_action("id")
+        
+        ranking = wca.Ranking(event, area = country, ranking_type = s_a)
+        hook = wca.RankingHook(ranking, None)
+        announcement_client.add_hook(channel, hook)
+
+        embed_content = discord.Embed(title = "Success", description = f":white_check_mark: <#{str(channel.id)}> has been subscribed to changes is {event().name} {area} {s_a} changes.")
+        await ctx.channel.send(embed = embed_content)
+
+    else:
+        # Show error
+        embed_error = discord.Embed(title = "Error", description = ":warning: You do not have permission to perform this action. This action must be performed by an admin or the owner of the server.")
+        await ctx.channel.send(embed = embed_error)
 
 client.run(open('.env', 'r').read())
